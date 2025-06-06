@@ -1,0 +1,89 @@
+module scientific_calculator (
+    input logic [5:0] SW,         // SW[5:3] = category, SW[2:0] = sub-op
+    output logic signed [31:0] result,
+    output logic bool_result
+);
+
+    // Fixed operands 
+    logic signed [15:0] a = 15;
+    logic signed [15:0] b = 4;
+
+    // Internal signals
+    logic signed [31:0] arith_result, bitwise_result, math_result, stat_result;
+    logic arith_valid, math_valid;
+
+    // Instantiate all units
+    arithmetic_unit arith (
+        .op_sel(SW[2:0]),
+        .a(a),
+        .b(b),
+        .result(arith_result),
+        .valid(arith_valid)
+    );
+
+    bitwise_unit bitwise (
+        .op_sel(SW[2:0]),
+        .a(a),
+        .b(b),
+        .result(bitwise_result)
+    );
+
+    math_unit math (
+        .op_sel(SW[2:0]),
+        .a(a),
+        .b(b),
+        .result(math_result),
+        .valid(math_valid)
+    );
+
+    statistical_unit stats (
+        .a(a),
+        .b(b),
+        .op_sel(SW[2:0]),
+        .result(stat_result)
+    );
+
+    boolean bool (
+        .opcode(SW[2:0]),
+        .a(a),
+        .b(b),
+        .result(bool_result)
+    );
+
+    // Import packages
+    import conversion::*;
+    import misc_ops::*;
+
+    // Output selection
+    always_comb begin
+        case (SW[5:3])
+            3'b001: result = arith_valid ? arith_result : 0;  // Arithmetic
+            3'b010: result = bitwise_result;                   // Bitwise
+            3'b011: result = math_valid ? math_result : 0;     // Math
+	    3'b100: begin                                      // Conversion
+                case (SW[2:0])
+    			3'b000: result = dec_to_bin(a);       // Decimal to Binary
+    			3'b001: result = dec_to_oct(a);       // Decimal to Octal
+    			3'b010: result = dec_to_hex(a);       // Decimal to Hexadecimal
+    			3'b011: result = dec_to_bcd(a);       // Decimal to BCD
+			3'b100: result = deg_to_rad(a);	      // Degree to Radians
+			3'b101: result = rad_to_deg(a);	      // Radians to Degree
+    			default: result = 32'd0;              // Default case
+		endcase
+            end
+            3'b101: result = stat_result;                      // Statistical
+            3'b110: result = 0;  // Boolean uses bool_result
+            3'b111: begin        // Misc operations
+                case (SW[2:0])
+                    3'b000: result = factorial(a);
+                    3'b001: result = permutation(a, b);
+                    3'b010: result = combination(a, b);
+                    default: result = 0;
+                endcase
+            end
+            default: result = 0;
+        endcase
+    end
+
+endmodule
+

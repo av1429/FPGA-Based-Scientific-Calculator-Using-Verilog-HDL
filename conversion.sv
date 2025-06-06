@@ -1,0 +1,72 @@
+package conversion;
+    /*// ===== Angle Conversions =====
+    function automatic real deg_to_rad(input real deg);
+        return deg * 3.14159265358979 / 180.0;
+    endfunction
+    function automatic real rad_to_deg(input real rad);
+        return rad * 180.0 / 3.14159265358979;
+    endfunction*/
+    
+    // ===== Decimal to Binary (returns 32-bit binary) =====
+    function automatic logic [31:0] dec_to_bin(input int decimal);
+    	return decimal[31:0];
+    endfunction
+
+    
+    // ===== Decimal to Octal (as 32-bit logic) =====
+		function automatic logic [31:0] dec_to_oct(input int decimal);
+			 logic [31:0] oct_val = 0;
+			 int temp = decimal;
+			 for (int i = 0; i < 11; i++) begin  // max 11 octal digits for 32-bit values
+				  if (temp == 0) break;
+				  oct_val |= ((temp % 8) << (i * 3));
+				  temp /= 8;
+			 end
+			 return oct_val;
+		endfunction
+
+    // ===== Decimal to Hexadecimal =====
+    function automatic logic [31:0] dec_to_hex(input int decimal);
+        // For hex, we can use the direct bit representation of the decimal value
+        // No conversion needed since logic already stores the bits correctly
+        return decimal;
+    endfunction
+    
+    // ===== Decimal to BCD =====
+    function automatic logic [31:0] dec_to_bcd(input int decimal);
+    logic [31:0] bcd;
+    logic [31:0] temp;
+    int i;
+    
+    // Initialize
+    bcd = '0;  // Set all bits to 0
+    temp = decimal;
+    
+    // Special case for 0
+    if (temp == 0) return 0;
+    
+    // Double dabble algorithm
+    // This algorithm shifts bits from binary into a BCD accumulator
+    // and adds 3 to any BCD digit that is 5 or greater before the next shift
+    for (i = 0; i < 32; i++) begin
+        // Check if any BCD digit is >= 5, and add 3 if so
+        // Each BCD digit is 4 bits
+        if (bcd[3:0] >= 5) bcd[3:0] += 3;
+        if (bcd[7:4] >= 5) bcd[7:4] += 3;
+        if (bcd[11:8] >= 5) bcd[11:8] += 3;
+        if (bcd[15:12] >= 5) bcd[15:12] += 3;
+        if (bcd[19:16] >= 5) bcd[19:16] += 3;
+        if (bcd[23:20] >= 5) bcd[23:20] += 3;
+        if (bcd[27:24] >= 5) bcd[27:24] += 3;
+        if (bcd[31:28] >= 5) bcd[31:28] += 3;
+        
+        // Shift everything left by 1 bit
+        bcd = {bcd[30:0], temp[31]};
+        
+        // Shift the input value
+        temp = {temp[30:0], 1'b0};
+    end
+    
+    return bcd;
+endfunction
+endpackage
